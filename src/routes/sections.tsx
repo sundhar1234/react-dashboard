@@ -10,13 +10,19 @@ import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgr
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
 
+import { SignInView } from 'src/sections/auth/sign-in-view';
+
+
+
+
+
 // ----------------------------------------------------------------------
 
 export const DashboardPage = lazy(() => import('src/pages/dashboard'));
-export const BlogPage = lazy(() => import('src/pages/blog'));
-export const UserPage = lazy(() => import('src/pages/user'));
-export const SignInPage = lazy(() => import('src/pages/sign-in'));
-export const ProductsPage = lazy(() => import('src/pages/products'));
+// eslint-disable-next-line import/no-unresolved
+export const ClientPage = lazy(() => import('src/pages/client'));
+export const PaymentPage = lazy(() => import('src/pages/payment'));
+export const PaymentDetailsPage = lazy(() => import('src/pages/paymentDetails'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 
 const renderFallback = () => (
@@ -41,6 +47,18 @@ const renderFallback = () => (
 
 export const routesSection: RouteObject[] = [
   {
+    index: true,
+    // path: 'sign-in',
+    element: (
+      <AuthLayout>
+        <Suspense fallback={renderFallback()}>
+          <SignInView />
+        </Suspense>
+      </AuthLayout>
+    ),
+  },
+  {
+    // path: 'dashboard',
     element: (
       <DashboardLayout>
         <Suspense fallback={renderFallback()}>
@@ -49,20 +67,20 @@ export const routesSection: RouteObject[] = [
       </DashboardLayout>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: 'user', element: <UserPage /> },
-      { path: 'products', element: <ProductsPage /> },
-      { path: 'blog', element: <BlogPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'client', element: <ClientPage /> },
+      { path: 'payment', element: <PaymentPage /> },
+      { path: 'payment-Details', element: <PaymentDetailsPage /> },
     ],
   },
-  {
-    path: 'sign-in',
-    element: (
-      <AuthLayout>
-        <SignInPage />
-      </AuthLayout>
-    ),
-  },
+  // {
+  //   path: 'sign-in',
+  //   element: (
+  //     <AuthLayout>
+  //       <SignInPage />
+  //     </AuthLayout>
+  //   ),
+  // },
   {
     path: '404',
     element: <Page404 />,

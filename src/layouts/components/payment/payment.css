@@ -1,0 +1,40 @@
+.form {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 20px;
+}
+
+.form-details,
+.form-details-part {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.form-details select,
+.form-details input,
+.form-details-part select,
+.form-details-part input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid black;
+    border-radius: 5px;
+
+}
+label {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+textarea {
+    border: 1px solid black;
+    border-radius: 5px;
+}
+.submit-btn {
+    background-color: blue;
+    color: white;
+    font-size: 20px;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+
+}

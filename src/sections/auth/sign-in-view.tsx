@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -13,73 +13,44 @@ import { useRouter } from 'src/routes/hooks';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
+import axiosInstance from '../../apiCall';
+import { LOGIN, LOGOUT } from '../../redux/reduxSignUp/signInTypes';
 
 export function SignInView() {
   const router = useRouter();
+  const dispatch = useDispatch();
 
+  const initialState = {
+    email: '',
+    password: '',
+  };
+
+  const [value, setValue] = useState(initialState);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSignIn = useCallback(() => {
-    router.push('/');
-  }, [router]);
+  const handleChange = (e: { target: { name: any; value: any; }; }) => {
+    setValue({
+      ...value,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-  const renderForm = (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'flex-end',
-        flexDirection: 'column',
-      }}
-    >
-      <TextField
-        fullWidth
-        name="email"
-        label="Email address"
-        defaultValue="hello@gmail.com"
-        sx={{ mb: 3 }}
-        slotProps={{
-          inputLabel: { shrink: true },
-        }}
-      />
+  const handleSignIn = async () => {
+    try {
+      // const response = await axiosInstance.post('', value);
+      // const { token, user } = response.data;
 
-      <Link variant="body2" color="inherit" sx={{ mb: 1.5 }}>
-        Forgot password?
-      </Link>
-
-      <TextField
-        fullWidth
-        name="password"
-        label="Password"
-        defaultValue="@demo1234"
-        type={showPassword ? 'text' : 'password'}
-        slotProps={{
-          inputLabel: { shrink: true },
-          input: {
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                  <Iconify icon={showPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          },
-        }}
-        sx={{ mb: 3 }}
-      />
-
-      <Button
-        fullWidth
-        size="large"
-        type="submit"
-        color="inherit"
-        variant="contained"
-        onClick={handleSignIn}
-      >
-        Sign in
-      </Button>
-    </Box>
-  );
+      // localStorage.setItem('token', token)
+      // dispatch({
+      //   type: LOGIN,
+      //   payload: { user, token },
+      // });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert('Invalid credentials');
+    }
+  };
 
   return (
     <>
@@ -93,43 +64,63 @@ export function SignInView() {
         }}
       >
         <Typography variant="h5">Sign in</Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-          }}
-        >
-          Don’t have an account?
-          <Link variant="subtitle2" sx={{ ml: 0.5 }}>
-            Get started
-          </Link>
-        </Typography>
       </Box>
-      {renderForm}
-      <Divider sx={{ my: 3, '&::before, &::after': { borderTopStyle: 'dashed' } }}>
-        <Typography
-          variant="overline"
-          sx={{ color: 'text.secondary', fontWeight: 'fontWeightMedium' }}
-        >
-          OR
-        </Typography>
-      </Divider>
+
       <Box
         sx={{
-          gap: 1,
           display: 'flex',
-          justifyContent: 'center',
+          alignItems: 'flex-end',
+          flexDirection: 'column',
         }}
       >
-        <IconButton color="inherit">
-          <Iconify width={22} icon="socials:google" />
-        </IconButton>
-        <IconButton color="inherit">
-          <Iconify width={22} icon="socials:github" />
-        </IconButton>
-        <IconButton color="inherit">
-          <Iconify width={22} icon="socials:twitter" />
-        </IconButton>
+        <TextField
+          fullWidth
+          name="email"
+          label="Email address"
+          value={value.email}
+          onChange={handleChange}
+          sx={{ mb: 3 }}
+          slotProps={{
+            inputLabel: { shrink: true },
+          }}
+        />
+
+        <TextField
+          fullWidth
+          name="password"
+          label="Password"
+          value={value.password}
+          onChange={handleChange}
+          type={showPassword ? 'text' : 'password'}
+          slotProps={{
+            inputLabel: { shrink: true },
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    <Iconify icon={showPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <Link variant="body2" color="inherit" sx={{ mb: 1.5 }}>
+          Forgot password?
+        </Link>
+
+        <Button
+          fullWidth
+          size="large"
+          type="button"
+          color="inherit"
+          variant="contained"
+          onClick={handleSignIn}
+        >
+          Sign in
+        </Button>
       </Box>
     </>
   );
