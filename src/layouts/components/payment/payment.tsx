@@ -2,8 +2,7 @@ import './payment.css';
 
 import { useEffect, useState } from 'react';
 
-// import { useRouter } from 'src/routes/hooks';
-mport { useNavigate } from 'react-router-dom';
+import { useRouter } from 'src/routes/hooks';
 
 import axiosInstance from '../../../apiCall';
 
@@ -15,8 +14,7 @@ type Client = {
 };
 
 export default function Payment() {
-    // const router = useRouter();
-    const navigate = useNavigate();
+    const router = useRouter();
     const [clients, setClients] = useState<Client[]>([]);
 
 
@@ -61,11 +59,11 @@ export default function Payment() {
             const response = await axiosInstance.post('/payment/create', formData);
             console.log('Success:', response.data);
             alert('Payment submitted successfully!');
-            navigate('/payment');
+            router.push('/payment');
 
         } catch (error) {
             console.error('Submission error:', error);
-            alert('Submission failed.');
+            alert('Submission failed. Check console for details.');
         }
     };
 
