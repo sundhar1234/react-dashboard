@@ -1,7 +1,6 @@
 {
-  "name": "@minimal/material-kit-react",
-  "author": "minimals.cc",
-  "licence": "MIT",
+  "name": "react-admin",
+  "homepage": "https://accounts.onflosuperabrasives.com",
   "version": "3.0.0",
   "private": false,
   "type": "module",
