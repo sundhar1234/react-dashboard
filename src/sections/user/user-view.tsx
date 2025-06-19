@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, Table, Button, TableBody, Typography, TableContainer, TablePagination, TableHead, TableRow, TableCell, Checkbox, Modal, TextField, IconButton, } from '@mui/material';
 
-
 import Payment from 'src/layouts/components/payment/payment';
 import axiosInstance from '../../apiCall';
 
@@ -128,10 +127,16 @@ export default function PaymnetView() {
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h6">Add Payment</Typography>
             <IconButton onClick={handleClose}>
-              {/* <CloseIcon /> */}
+               <button
+                style={{ fontSize: '30px', background: 'none', border: 'none', cursor: 'pointer',color:"#FF0000" }}
+              >
+                &times;
+              </button>
             </IconButton>
           </Box>
-          <Payment />
+          <Payment  onSuccess={() => {
+              handleClose();
+            }}/>
         </Box>
       </Modal>
 
@@ -220,3 +225,4 @@ export default function PaymnetView() {
     </Box>
   );
 }
+

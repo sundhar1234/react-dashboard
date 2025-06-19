@@ -1,137 +1,262 @@
 import './payment.css';
-
 import { useEffect, useState } from 'react';
-
 import { useRouter } from 'src/routes/hooks';
-
 import axiosInstance from '../../../apiCall';
 
-// Define TypeScript type for a client
-type Client = {
-    client_id: number;
-    client_name: string;
+// Define TypeScript types
+interface Client {
+  client_id: number;
+  client_name: string;
+}
 
-};
+interface Detail {
+  receipt_type: 'invoice' | 'on-account' | 'advance' | 'other';
+  reference_id: number | null;
+  amount: number;
+  description: string;
+}
 
 export default function Payment() {
-    const router = useRouter();
-    const [clients, setClients] = useState<Client[]>([]);
+  const router = useRouter();
+  const [clients, setClients] = useState<Client[]>([]);
 
+  const [formData, setFormData] = useState({
+    client_id: '',
+    recepit_date: '',
+    recepit_amount: '',
+    payment_mode: '',
+    description: '',
+    opening_balance: '',
+    opening_balance_date: '',
+  });
 
-    const [formData, setFormData] = useState({
-        client_id: '',
-        recepit_date: '',
-        recepit_amount: '',
-        payment_mode: '',
+  const [details, setDetails] = useState<Detail[]>([
+    {
+      receipt_type: 'invoice',
+      reference_id: null,
+      amount: 0,
+      description: '',
+    },
+  ]);
+
+  // Fetch clients on load
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await axiosInstance.get('/client/list-all');
+        setClients(response.data.data);
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+      }
+    };
+    fetchClients();
+  }, []);
+
+  // Handle form inputs
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle detail inputs by index
+  const handleDetailChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    const updatedDetails = [...details];
+    updatedDetails[index] = {
+      ...updatedDetails[index],
+      [name]: name === 'amount' || name === 'reference_id' ? +value : value,
+    };
+    setDetails(updatedDetails);
+  };
+
+  // Add new detail block
+  const handleAddDetail = () => {
+    setDetails((prev) => [
+      ...prev,
+      {
+        receipt_type: 'invoice',
+        reference_id: null,
+        amount: 0,
         description: '',
-        opening_balance: '',
-        opening_balance_date: '',
-        details: '',
-    });
+      },
+    ]);
+  };
+  const handleRemoveDetail = (index: number) => {
+    const updatedDetails = details.filter((_, i) => i !== index);
+    setDetails(updatedDetails);
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-
-    useEffect(() => {
-        const fetchClients = async () => {
-            try {
-                const response = await axiosInstance.get('/client/list-all');
-                console.log(response.data, 'Fetched Clients');
-                setClients(response.data.data);
-            } catch (error) {
-                console.error('Error fetching clients:', error);
-            }
-        };
-        fetchClients();
-    }, []);
-
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+    const payload = {
+      ...formData,
+      client_id: +formData.client_id,
+      recepit_amount: +formData.recepit_amount,
+      opening_balance: +formData.opening_balance,
+      details,
     };
 
+    try {
+      await axiosInstance.post('/payment/create', payload);
+      alert('Payment submitted successfully!');
+      router.push('/payment');
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Submission failed. Check console for details.');
+    }
+  };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log('Submitting:', formData);
+  return (
+    <section>
+      <form onSubmit={handleSubmit}>
+        <div className="form">
+          <div className="form-details">
+            <label>Client Name</label>
+            <select name="client_id" value={formData.client_id} onChange={handleChange} required>
+              <option value="">Select Client</option>
+              {clients.map((client) => (
+                <option key={client.client_id} value={client.client_id}>
+                  {client.client_name}
+                </option>
+              ))}
+            </select>
+          </div>
 
+          <div className="form-details-part">
+            <label>Receipt Date</label>
+            <input
+              type="date"
+              name="recepit_date"
+              value={formData.recepit_date}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
 
-        try {
-            const response = await axiosInstance.post('/payment/create', formData);
-            console.log('Success:', response.data);
-            alert('Payment submitted successfully!');
-            router.push('/payment');
+        <div className="form">
+          <div className="form-details">
+            <label>Receipt Amount</label>
+            <input
+              type="number"
+              name="recepit_amount"
+              value={formData.recepit_amount}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        } catch (error) {
-            console.error('Submission error:', error);
-            alert('Submission failed. Check console for details.');
-        }
-    };
+          <div className="form-details-part">
+            <label>Payment Mode</label>
+            <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required>
+              <option value="">Select Mode</option>
+              <option value="cash">Cash</option>
+              <option value="bank">Bank</option>
+              <option value="check">Check</option>
+            </select>
+          </div>
+        </div>
 
-    return (
-        <section>
-            <form onSubmit={handleSubmit}>
-                <div className="form">
-                    <div className="form-details">
-                        <label>Client Name</label>
-                        <select name="client_id" value={formData.client_id} onChange={handleChange}>
-                            <option value="">Select Client</option>
-                            {clients.map((client) => (
-                                <option key={client.client_id} value={client.client_id}>
-                                    {client.client_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+        <div className="form">
+          <div className="form-details">
+            <label>Description</label>
+            <textarea name="description" rows={2} value={formData.description} onChange={handleChange} />
+          </div>
 
-                    <div className="form-details-part">
-                        <label>Receipt Date</label>
-                        <input type="date" name="recepit_date" value={formData.recepit_date} onChange={handleChange} />
-                    </div>
-                </div>
+          <div className="form-details-part">
+            <label>Opening Balance</label>
+            <input
+              type="number"
+              name="opening_balance"
+              value={formData.opening_balance}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
 
-                <div className="form">
-                    <div className="form-details">
-                        <label>Receipt Amount</label>
-                        <input type="number" name="recepit_amount" value={formData.recepit_amount} onChange={handleChange} />
-                    </div>
+        <div className="form">
+          <div className="form-details">
+            <label>Opening Balance Date</label>
+            <input
+              type="date"
+              name="opening_balance_date"
+              value={formData.opening_balance_date}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
 
-                    <div className="form-details-part">
-                        <label>Payment Mode</label>
-                        <select name="payment_mode" value={formData.payment_mode} onChange={handleChange}>
-                            <option value="">Select Mode</option>
-                            <option value="cash">Cash</option>
-                            <option value="bank">Bank</option>
-                            <option value="check">Check</option>
-                        </select>
-                    </div>
-                </div>
+        <hr />
+        <h4>Add Payment Details</h4>
 
-                <div className="form">
-                    <div className="form-details">
-                        <label>Description</label>
-                        <textarea name="description" rows={2} value={formData.description} onChange={handleChange} />
-                    </div>
+        {details.map((detail, index) => (
+          <div key={index} className="form-block">
+            <div className="form">
+              <div className="form-details">
+                <label>Receipt Type</label>
+                <select
+                  name="receipt_type"
+                  value={detail.receipt_type}
+                  onChange={(e) => handleDetailChange(index, e)}
+                >
+                  <option value="invoice">Invoice</option>
+                  <option value="on-account">On Account</option>
+                  <option value="advance">Advance</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
 
-                    <div className="form-details-part">
-                        <label>Opening Balance</label>
-                        <input type="number" name="opening_balance" value={formData.opening_balance} onChange={handleChange} />
-                    </div>
-                </div>
+              <div className="form-details-part">
+                <label>Reference ID</label>
+                <input
+                  type="number"
+                  name="reference_id"
+                  value={detail.reference_id ?? ''}
+                  onChange={(e) => handleDetailChange(index, e)}
+                />
+              </div>
+            </div>
 
-                <div className="form">
-                    <div className="form-details">
-                        <label>Opening Balance Date</label>
-                        <input type="date" name="opening_balance_date" value={formData.opening_balance_date} onChange={handleChange} />
-                    </div>
+            <div className="form">
+              <div className="form-details">
+                <label>Amount</label>
+                <input
+                  type="number"
+                  name="amount"
+                  value={detail.amount}
+                  onChange={(e) => handleDetailChange(index, e)}
+                  required
+                />
+              </div>
 
-                    <div className="form-details-part">
-                        <label>Details</label>
-                        <textarea name="details" rows={2} value={formData.details} onChange={handleChange} />
-                    </div>
-                </div>
-
-                <button type="submit" className="submit-btn">Submit</button>
-            </form>
-        </section>
-    );
+              <div className="form-details-part">
+                <label>Description</label>
+                <input
+                  type="text"
+                  name="description"
+                  value={detail.description}
+                  onChange={(e) => handleDetailChange(index, e)}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '5px' }}>
+              <span style={{ backgroundColor: 'grey', borderRadius: '3px', fontSize: '15px', fontWeight: 500, color: 'black', padding: '2px 1px',cursor:'pointer' }} onClick={() => handleRemoveDetail(index)}>  &times;</span>
+            </div>
+            <hr />
+          </div>
+        ))}
+        <div style={{ padding: '10px 0', cursor: 'pointer' }}>
+          <span onClick={handleAddDetail}>  &#43;</span>
+        </div>
+        <button type="submit" className="submit-btn">
+          Submit
+        </button>
+      </form>
+    </section>
+  );
 }

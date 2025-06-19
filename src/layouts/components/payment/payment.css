@@ -21,20 +21,23 @@
     border-radius: 5px;
 
 }
+
 label {
     font-size: 16px;
     margin-bottom: 4px;
 }
+
 textarea {
     border: 1px solid black;
     border-radius: 5px;
 }
+
 .submit-btn {
     background-color: blue;
     color: white;
     font-size: 20px;
     border: none;
-    padding: 5px 10px;
+    padding: 5px 8px;
     cursor: pointer;
-
+    border-radius: 4px;
 }
