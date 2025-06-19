@@ -1,7 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Table, Button, TableBody, Typography, TableContainer, TablePagination, TableHead, TableRow, TableCell, Checkbox, Modal, TextField, IconButton, MenuItem, Pagination } from '@mui/material';
+
+import {
+  Box,
+  Card,
+  Table,
+  Button,
+  TableBody,
+  Typography,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableCell,
+  Checkbox,
+  Modal,
+  TextField,
+  IconButton,
+  MenuItem,
+  Pagination,
+} from '@mui/material';
 
 import Payment from 'src/layouts/components/payment/payment';
+
 import axiosInstance from '../../apiCall';
 
 type PaymentType = {
@@ -27,15 +46,21 @@ export default function PaymnetView() {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await axiosInstance.get('/payment/all-payment');
-        setPayments(res.data.data);
+        const res = await axiosInstance.post('/payment/list-all', {
+          limit: rowsPerPage,
+          offset: page * rowsPerPage,
+          text: filterName,
+        });
+        setPayments(res.data.data || []);
+        if (res.data.total) {
+          setTotalCount(res.data.total);
+        }
       } catch (error) {
         console.error('Error fetching payments:', error);
       }
     };
-
     fetchPayments();
-  }, []);
+  }, [page, rowsPerPage, filterName]);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -54,15 +79,11 @@ export default function PaymnetView() {
     return 0;
   };
 
-  const filteredData = payments
-    .filter((payment) =>
-      payment.client_id.toString().toLowerCase().includes(filterName.toLowerCase())
-    )
-    .sort(comparator);
+  const sortedData = [...payments].sort(comparator);
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      const newSelected = filteredData.map((n) => n.client_id.toString());
+      const newSelected = sortedData.map((n) => n.client_id.toString());
       setSelected(newSelected);
     } else {
       setSelected([]);
@@ -82,8 +103,8 @@ export default function PaymnetView() {
     setSelected(newSelected);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage - 1);
   };
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +118,7 @@ export default function PaymnetView() {
   };
 
   const isSelected = (id: string) => selected.indexOf(id) !== -1;
-  const emptyRows = Math.max(0, (1 + page) * rowsPerPage - filteredData.length);
+  const emptyRows = Math.max(0, rowsPerPage - sortedData.length);
 
   return (
     <Box p={3}>
@@ -129,21 +150,26 @@ export default function PaymnetView() {
             <Typography variant="h6">Add Payment</Typography>
             <IconButton onClick={handleClose}>
               <button
-                style={{ fontSize: '30px', background: 'none', border: 'none', cursor: 'pointer', color: "#FF0000" }}
+                style={{
+                  fontSize: '30px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#FF0000',
+                }}
               >
                 &times;
               </button>
             </IconButton>
           </Box>
-          {/* <Payment  onSuccess={() => {
-              return handleClose();
-          }} /> */}
-          <Payment />
+          <Payment onSuccess={() => {
+            handleClose();
+          }}  />
         </Box>
       </Modal>
 
       <TextField
-        label="Search by Client ID"
+        label="Search"
         variant="outlined"
         value={filterName}
         onChange={handleFilter}
@@ -158,8 +184,8 @@ export default function PaymnetView() {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selected.length === filteredData.length && filteredData.length > 0}
-                    indeterminate={selected.length > 0 && selected.length < filteredData.length}
+                    checked={selected.length === sortedData.length && sortedData.length > 0}
+                    indeterminate={selected.length > 0 && selected.length < sortedData.length}
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
@@ -171,39 +197,34 @@ export default function PaymnetView() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredData
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row) => {
-                  const idStr = row.client_id.toString();
-                  const isItemSelected = isSelected(idStr);
-
-                  return (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      role="checkbox"
-                      selected={isItemSelected}
-                      onClick={() => handleClick(idStr)}
-                    >
-                      <TableCell padding="checkbox">
-                        <Checkbox checked={isItemSelected} />
-                      </TableCell>
-                      <TableCell>{row.client_id}</TableCell>
-                      <TableCell>{row.recepit_date}</TableCell>
-                      <TableCell>{row.recepit_amount}</TableCell>
-                      <TableCell>{row.payment_mode}</TableCell>
-                      <TableCell>{row.description}</TableCell>
-                    </TableRow>
-                  );
-                })}
-
+              {sortedData.map((row) => {
+                const idStr = row.client_id.toString();
+                const isItemSelected = isSelected(idStr);
+                return (
+                  <TableRow
+                    key={row.id}
+                    hover
+                    role="checkbox"
+                    selected={isItemSelected}
+                    onClick={() => handleClick(idStr)}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={isItemSelected} />
+                    </TableCell>
+                    <TableCell>{row.client_id}</TableCell>
+                    <TableCell>{row.recepit_date}</TableCell>
+                    <TableCell>{row.recepit_amount}</TableCell>
+                    <TableCell>{row.payment_mode}</TableCell>
+                    <TableCell>{row.description}</TableCell>
+                  </TableRow>
+                );
+              })}
               {emptyRows > 0 && (
                 <TableRow style={{ height: 53 * emptyRows }}>
                   <TableCell colSpan={6} />
                 </TableRow>
               )}
-
-              {filteredData.length === 0 && (
+              {sortedData.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
                     No data found
@@ -219,10 +240,7 @@ export default function PaymnetView() {
             select
             label="Rows per page"
             value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
+            onChange={handleChangeRowsPerPage}
             size="small"
             sx={{ width: 150 }}
           >
@@ -234,7 +252,7 @@ export default function PaymnetView() {
           <Pagination
             count={Math.ceil(totalCount / rowsPerPage)}
             page={page + 1}
-            onChange={(_e, value) => setPage(value - 1)}
+            onChange={handleChangePage}
             color="primary"
             shape="rounded"
           />
@@ -243,4 +261,3 @@ export default function PaymnetView() {
     </Box>
   );
 }
-

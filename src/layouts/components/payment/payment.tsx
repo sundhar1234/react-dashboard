@@ -1,11 +1,11 @@
 import './payment.css';
+
 import { useEffect, useState } from 'react';
+import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
 import { useRouter } from 'src/routes/hooks';
 import axiosInstance from '../../../apiCall';
 
-
-import Select from 'react-select';
-import { useNavigate } from 'react-router-dom';
 
 interface Client {
   client_id: number;
@@ -18,14 +18,17 @@ interface Detail {
   amount: number;
   description: string;
 }
-
-export default function Payment() {
+type PaymentProps = {
+  onSuccess?: () => void;
+};
+export default function Payment({ onSuccess }: PaymentProps) {
   const router = useRouter();
   const navigate = useNavigate();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -109,9 +112,26 @@ export default function Payment() {
     try {
       await axiosInstance.post('/payment/create', payload);
       alert('Payment submitted successfully!');
-
-      // router.push('/payment');
-      navigate('/payment');
+      setFormData({
+        client_id: '',
+        recepit_date: '',
+        recepit_amount: '',
+        payment_mode: '',
+        description: '',
+        opening_balance: '',
+        opening_balance_date: '',
+      });
+      setDetails([
+        {
+          receipt_type: 'invoice',
+          reference_id: null,
+          amount: 0,
+          description: '',
+        },
+      ]);
+      onSuccess?.();
+      router.push('/payment');
+      // navigate('/payment');
     } catch (error) {
       console.error('Submission error:', error);
       alert('Submission failed. Check console for details.');
@@ -122,17 +142,6 @@ export default function Payment() {
     <section>
       <form onSubmit={handleSubmit}>
         <div className="form">
-          {/* <div className="form-details">
-            <label>Client Name</label>
-            <select name="client_id" value={formData.client_id} onChange={handleChange} required>
-              <option value="">Select Client</option>
-              {clients.map((client) => (
-                <option key={client.client_id} value={client.client_id}>
-                  {client.client_name}
-                </option>
-              ))}
-            </select>
-          </div> */}
           <div className="form-details">
             <label>Client Name</label>
             <Select

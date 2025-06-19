@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
 
-import Box from '@mui/material/Box';
+import Box from '@mui/material/Box'
 import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -14,21 +13,19 @@ import { useRouter } from 'src/routes/hooks';
 import { Iconify } from 'src/components/iconify';
 
 import axiosInstance from '../../apiCall';
-import { LOGIN, LOGOUT } from '../../redux/reduxSignUp/signInTypes';
 
 export function SignInView() {
-  const router = useRouter();
-  const dispatch = useDispatch();
+  const router = useRouter()
 
   const initialState = {
-    email: '',
+    username: '',
     password: '',
   };
 
   const [value, setValue] = useState(initialState);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e: { target: { name: any; value: any; }; }) => {
+  const handleChange = (e: { target: { name: string; value: string } }) => {
     setValue({
       ...value,
       [e.target.name]: e.target.value,
@@ -37,14 +34,10 @@ export function SignInView() {
 
   const handleSignIn = async () => {
     try {
-      // const response = await axiosInstance.post('', value);
-      // const { token, user } = response.data;
-
-      // localStorage.setItem('token', token)
-      // dispatch({
-      //   type: LOGIN,
-      //   payload: { user, token },
-      // });
+      const response = await axiosInstance.post('auth/login', value);
+      const { access_token } = response.data;
+      console.log(response, 'response')
+      localStorage.setItem('token', access_token);
       router.push('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
@@ -75,9 +68,9 @@ export function SignInView() {
       >
         <TextField
           fullWidth
-          name="email"
-          label="Email address"
-          value={value.email}
+          name="username"
+          label="Username"
+          value={value.username}
           onChange={handleChange}
           sx={{ mb: 3 }}
           slotProps={{

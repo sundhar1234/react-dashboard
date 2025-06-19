@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+
 import {
     Box, Card, Table, Checkbox, TableBody, TableContainer,
-    TablePagination, TableHead, TableRow, TableCell, TextField,
+    MenuItem, Pagination, TableHead, TableRow, TableCell, TextField
 } from '@mui/material';
+
 import axiosInstance from '../../apiCall';
 
 type ReceiptDetail = {
@@ -25,34 +27,40 @@ type PaymentType = {
 };
 
 export default function DetailsPayment() {
-    const [details, setDetails] = useState<ReceiptDetail[]>([]);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [allDetails, setAllDetails] = useState<ReceiptDetail[]>([]);
+    const [filteredDetails, setFilteredDetails] = useState<ReceiptDetail[]>([]);
     const [selected, setSelected] = useState<string[]>([]);
-    const [filterName, setFilterName] = useState('');
-    const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-    const [orderBy, setOrderBy] = useState<keyof ReceiptDetail>('receipt_id');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [filterType, setFilterType] = useState('');
 
     useEffect(() => {
-        const fetchPayments = async () => {
+        const fetchAll = async () => {
             try {
                 const res = await axiosInstance.get('/payment/all-payment');
-                const allReceiptDetails: ReceiptDetail[] = res.data.data.flatMap((payment: PaymentType) =>
-                    payment.receiptDetails.map(detail => ({
-                        ...detail,
-                    }))
+                const details: ReceiptDetail[] = (res.data.data || []).flatMap((payment: PaymentType) =>
+                    (payment.receiptDetails || []).map(detail => ({ ...detail }))
                 );
-                setDetails(allReceiptDetails);
+                setAllDetails(details);
+                setFilteredDetails(details);
             } catch (error) {
-                console.error('Error fetching payments:', error);
+                console.error('Fetch error:', error);
             }
         };
-        fetchPayments();
+        fetchAll();
     }, []);
+
+    useEffect(() => {
+        const filtered = allDetails.filter(item =>
+            item.receipt_type.toLowerCase().includes(filterType.trim().toLowerCase())
+        );
+        setFilteredDetails(filtered);
+        setPage(0);
+    }, [filterType, allDetails]);
 
     const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
-            const newSelected = filteredData.map((n) => n.receipt_id.toString());
+            const newSelected = currentPageData.map(n => n.receipt_id.toString());
             setSelected(newSelected);
         } else {
             setSelected([]);
@@ -63,52 +71,37 @@ export default function DetailsPayment() {
         const selectedIndex = selected.indexOf(id);
         let newSelected: string[] = [];
 
-        if (selectedIndex === -1) {
-            newSelected = [...selected, id];
-        } else {
-            newSelected = selected.filter((item) => item !== id);
-        }
+        if (selectedIndex === -1) newSelected = [...selected, id];
+        else newSelected = selected.filter(item => item !== id);
 
         setSelected(newSelected);
     };
 
-    const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
+    const handleChangePage = (event: unknown, value: number) => setPage(value - 1);
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
 
-    const handleFilter = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setFilterName(event.target.value);
-        setPage(0);
-    };
+    const currentPageData = filteredDetails.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+    );
 
-    const comparator = (a: ReceiptDetail, b: ReceiptDetail) => {
-        const valA = a[orderBy]?.toString().toLowerCase() || '';
-        const valB = b[orderBy]?.toString().toLowerCase() || '';
-        if (valA < valB) return order === 'asc' ? -1 : 1;
-        if (valA > valB) return order === 'asc' ? 1 : -1;
-        return 0;
-    };
-
-    const filteredData = details
-        .filter((item) => item.receipt_id.toString().includes(filterName.toLowerCase()))
-        .sort(comparator);
-
-    const isSelected = (id: string) => selected.indexOf(id) !== -1;
-    const emptyRows = Math.max(0, (1 + page) * rowsPerPage - filteredData.length);
+    const isSelected = (id: string) => selected.includes(id);
 
     return (
         <Box p={3}>
             <TextField
-                label="Search by Receipt ID"
+                label="Search by Receipt Type"
                 variant="outlined"
-                value={filterName}
-                onChange={handleFilter}
+                value={filterType}
+                onChange={e => setFilterType(e.target.value)}
                 fullWidth
                 margin="normal"
             />
+
             <Card>
                 <TableContainer>
                     <Table>
@@ -116,8 +109,8 @@ export default function DetailsPayment() {
                             <TableRow>
                                 <TableCell padding="checkbox">
                                     <Checkbox
-                                        checked={selected.length === filteredData.length && filteredData.length > 0}
-                                        indeterminate={selected.length > 0 && selected.length < filteredData.length}
+                                        checked={selected.length === currentPageData.length && currentPageData.length > 0}
+                                        indeterminate={selected.length > 0 && selected.length < currentPageData.length}
                                         onChange={handleSelectAllClick}
                                     />
                                 </TableCell>
@@ -129,34 +122,27 @@ export default function DetailsPayment() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredData
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((row) => {
-                                    const isItemSelected = isSelected(row.receipt_id.toString());
-                                    return (
-                                        <TableRow
-                                            key={row.id}
-                                            hover
-                                            selected={isItemSelected}
-                                            onClick={() => handleClick(row.receipt_id.toString())}
-                                        >
-                                            <TableCell padding="checkbox">
-                                                <Checkbox checked={isItemSelected} />
-                                            </TableCell>
-                                            <TableCell>{row.receipt_id}</TableCell>
-                                            <TableCell>{row.reference_id}</TableCell>
-                                            <TableCell>{row.receipt_type}</TableCell>
-                                            <TableCell>{row.amount}</TableCell>
-                                            <TableCell>{row.description}</TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            {emptyRows > 0 && (
-                                <TableRow style={{ height: 53 * emptyRows }}>
-                                    <TableCell colSpan={6} />
-                                </TableRow>
-                            )}      
-                            {filteredData.length === 0 && (
+                            {currentPageData.map(row => {
+                                const isItemSelected = isSelected(row.receipt_id.toString());
+                                return (
+                                    <TableRow
+                                        key={row.id}
+                                        hover
+                                        selected={isItemSelected}
+                                        onClick={() => handleClick(row.receipt_id.toString())}
+                                    >
+                                        <TableCell padding="checkbox">
+                                            <Checkbox checked={isItemSelected} />
+                                        </TableCell>
+                                        <TableCell>{row.receipt_id}</TableCell>
+                                        <TableCell>{row.reference_id}</TableCell>
+                                        <TableCell>{row.receipt_type}</TableCell>
+                                        <TableCell>{row.amount}</TableCell>
+                                        <TableCell>{row.description}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            {currentPageData.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center">
                                         No data found
@@ -167,15 +153,28 @@ export default function DetailsPayment() {
                     </Table>
                 </TableContainer>
 
-                <TablePagination
-                    page={page}
-                    component="div"
-                    count={filteredData.length}
-                    rowsPerPage={rowsPerPage}
-                    onPageChange={handleChangePage}
-                    rowsPerPageOptions={[5, 10, 25]}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                />
+                <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
+                    <TextField
+                        select
+                        label="Rows per page"
+                        value={rowsPerPage}
+                        onChange={handleChangeRowsPerPage}
+                        size="small"
+                        sx={{ width: 150 }}
+                    >
+                        <MenuItem value={5}>5</MenuItem>
+                        <MenuItem value={10}>10</MenuItem>
+                        <MenuItem value={25}>25</MenuItem>
+                    </TextField>
+
+                    <Pagination
+                        count={Math.ceil(filteredDetails.length / rowsPerPage)}
+                        page={page + 1}
+                        onChange={handleChangePage}
+                        color="primary"
+                        shape="rounded"
+                    />
+                </Box>
             </Card>
         </Box>
     );
