@@ -17,9 +17,9 @@
 .form-details-part input {
     width: 100%;
     padding: 10px 14px;
-    border: 1px solid black;
+    border: 1px solid hsl(0, 0%, 80%);
     border-radius: 5px;
-
+    color: rgb(57, 53, 53);
 }
 
 label {
@@ -28,8 +28,9 @@ label {
 }
 
 textarea {
-    border: 1px solid black;
+    border: 1px solid hsl(0, 0%, 80%);
     border-radius: 5px;
+    color: grey;
 }
 
 .submit-btn {

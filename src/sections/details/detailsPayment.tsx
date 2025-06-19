@@ -37,7 +37,6 @@ export default function DetailsPayment() {
         const fetchPayments = async () => {
             try {
                 const res = await axiosInstance.get('/payment/all-payment');
-                // Flatten receiptDetails from all payments
                 const allReceiptDetails: ReceiptDetail[] = res.data.data.flatMap((payment: PaymentType) =>
                     payment.receiptDetails.map(detail => ({
                         ...detail,
@@ -110,7 +109,6 @@ export default function DetailsPayment() {
                 fullWidth
                 margin="normal"
             />
-
             <Card>
                 <TableContainer>
                     <Table>
@@ -157,7 +155,7 @@ export default function DetailsPayment() {
                                 <TableRow style={{ height: 53 * emptyRows }}>
                                     <TableCell colSpan={6} />
                                 </TableRow>
-                            )}
+                            )}      
                             {filteredData.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center">

@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'src/routes/hooks';
 import axiosInstance from '../../../apiCall';
 
-// Define TypeScript types
+
+import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
+
 interface Client {
   client_id: number;
   client_name: string;
@@ -18,7 +21,11 @@ interface Detail {
 
 export default function Payment() {
   const router = useRouter();
+  const navigate = useNavigate();
+
   const [clients, setClients] = useState<Client[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -39,11 +46,10 @@ export default function Payment() {
     },
   ]);
 
-  // Fetch clients on load
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const response = await axiosInstance.get('/client/list-all');
+        const response = await axiosInstance.get('/client/details');
         setClients(response.data.data);
       } catch (error) {
         console.error('Error fetching clients:', error);
@@ -52,7 +58,9 @@ export default function Payment() {
     fetchClients();
   }, []);
 
-  // Handle form inputs
+  const filteredClients = clients.filter((client) =>
+    client.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -60,7 +68,6 @@ export default function Payment() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle detail inputs by index
   const handleDetailChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -74,7 +81,6 @@ export default function Payment() {
     setDetails(updatedDetails);
   };
 
-  // Add new detail block
   const handleAddDetail = () => {
     setDetails((prev) => [
       ...prev,
@@ -92,7 +98,6 @@ export default function Payment() {
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const payload = {
       ...formData,
       client_id: +formData.client_id,
@@ -104,7 +109,9 @@ export default function Payment() {
     try {
       await axiosInstance.post('/payment/create', payload);
       alert('Payment submitted successfully!');
-      router.push('/payment');
+
+      // router.push('/payment');
+      navigate('/payment');
     } catch (error) {
       console.error('Submission error:', error);
       alert('Submission failed. Check console for details.');
@@ -115,7 +122,7 @@ export default function Payment() {
     <section>
       <form onSubmit={handleSubmit}>
         <div className="form">
-          <div className="form-details">
+          {/* <div className="form-details">
             <label>Client Name</label>
             <select name="client_id" value={formData.client_id} onChange={handleChange} required>
               <option value="">Select Client</option>
@@ -125,8 +132,34 @@ export default function Payment() {
                 </option>
               ))}
             </select>
+          </div> */}
+          <div className="form-details">
+            <label>Client Name</label>
+            <Select
+              name="client_id"
+              options={clients.map((client) => ({
+                value: client.client_id,
+                label: client.client_name,
+              }))}
+              value={
+                clients
+                  .map((client) => ({
+                    value: client.client_id,
+                    label: client.client_name,
+                  }))
+                  .find((option) => option.value.toString() === formData.client_id)
+              }
+              onChange={(selectedOption) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  client_id: selectedOption?.value.toString() || '',
+                }));
+              }}
+              placeholder="Select Client"
+              isSearchable
+              isClearable
+            />
           </div>
-
           <div className="form-details-part">
             <label>Receipt Date</label>
             <input
@@ -245,7 +278,7 @@ export default function Payment() {
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '5px' }}>
-              <span style={{ backgroundColor: 'grey', borderRadius: '3px', fontSize: '15px', fontWeight: 500, color: 'black', padding: '2px 1px',cursor:'pointer' }} onClick={() => handleRemoveDetail(index)}>  &times;</span>
+              <span style={{ backgroundColor: 'grey', borderRadius: '3px', fontSize: '15px', fontWeight: 500, color: 'black', padding: '2px 1px', cursor: 'pointer' }} onClick={() => handleRemoveDetail(index)}>  &times;</span>
             </div>
             <hr />
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Table, Button, TableBody, Typography, TableContainer, TablePagination, TableHead, TableRow, TableCell, Checkbox, Modal, TextField, IconButton, } from '@mui/material';
+import { Box, Card, Table, Button, TableBody, Typography, TableContainer, TablePagination, TableHead, TableRow, TableCell, Checkbox, Modal, TextField, IconButton, MenuItem, Pagination } from '@mui/material';
 
 import Payment from 'src/layouts/components/payment/payment';
 import axiosInstance from '../../apiCall';
@@ -21,6 +21,7 @@ export default function PaymnetView() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selected, setSelected] = useState<string[]>([]);
   const [filterName, setFilterName] = useState('');
+  const [totalCount, setTotalCount] = useState(50);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -127,16 +128,17 @@ export default function PaymnetView() {
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h6">Add Payment</Typography>
             <IconButton onClick={handleClose}>
-               <button
-                style={{ fontSize: '30px', background: 'none', border: 'none', cursor: 'pointer',color:"#FF0000" }}
+              <button
+                style={{ fontSize: '30px', background: 'none', border: 'none', cursor: 'pointer', color: "#FF0000" }}
               >
                 &times;
               </button>
             </IconButton>
           </Box>
-          <Payment  onSuccess={() => {
-              handleClose();
-            }}/>
+          {/* <Payment  onSuccess={() => {
+              return handleClose();
+          }} /> */}
+          <Payment />
         </Box>
       </Modal>
 
@@ -212,15 +214,31 @@ export default function PaymnetView() {
           </Table>
         </TableContainer>
 
-        <TablePagination
-          page={page}
-          component="div"
-          count={filteredData.length}
-          rowsPerPage={rowsPerPage}
-          onPageChange={handleChangePage}
-          rowsPerPageOptions={[5, 10, 25]}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
+        <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
+          <TextField
+            select
+            label="Rows per page"
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            size="small"
+            sx={{ width: 150 }}
+          >
+            <MenuItem value={5}>5</MenuItem>
+            <MenuItem value={10}>10</MenuItem>
+            <MenuItem value={25}>25</MenuItem>
+          </TextField>
+
+          <Pagination
+            count={Math.ceil(totalCount / rowsPerPage)}
+            page={page + 1}
+            onChange={(_e, value) => setPage(value - 1)}
+            color="primary"
+            shape="rounded"
+          />
+        </Box>
       </Card>
     </Box>
   );

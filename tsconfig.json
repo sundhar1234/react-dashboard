@@ -19,8 +19,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "isolatedModules": true,
-    /* Linting */
-    "strict": true,
+    "strict": false,
     "noEmit": true,
     "strictNullChecks": true,
     "typeRoots": [

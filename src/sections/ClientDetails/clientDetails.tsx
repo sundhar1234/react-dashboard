@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, Table, TableBody, Typography, TableContainer, TablePagination, TableHead, TableRow, TableCell, Checkbox, TextField, } from '@mui/material';
-
+import {
+    Box,
+    Card,
+    Table,
+    TableBody,
+    Typography,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TableCell,
+    Checkbox,
+    TextField,
+    Pagination,
+    MenuItem
+} from '@mui/material';
 import axiosInstance from '../../apiCall';
+
 type ClientType = {
     client_id: number;
     client_name: string;
@@ -10,34 +24,40 @@ type ClientType = {
     phone: number;
     currency: string;
     country: string;
+    outstanding: number | null;
+    creditOrDebit: string;
 };
 
 export default function ClientView() {
     const [clients, setClients] = useState<ClientType[]>([]);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [selected, setSelected] = useState<number[]>([]);
-    const [filterName, setFilterName] = useState('');
+    const [searchText, setSearchText] = useState('');
+    const [totalCount, setTotalCount] = useState(50);
 
     useEffect(() => {
         const fetchClients = async () => {
             try {
-                const response = await axiosInstance.get('/client/list-all');
+                const response = await axiosInstance.post('/client/list-all', {
+                    limit: rowsPerPage,
+                    offset: page * rowsPerPage,
+                    text: searchText
+                });
                 setClients(response.data.data);
+                if (response.data.total) {
+                    setTotalCount(response.data.total);
+                }
             } catch (error) {
-                console.error('Error fetching clients:', error);
+                console.error('Error fetching clients', error);
             }
         };
         fetchClients();
-    }, []);
-
-    const filteredData = clients.filter((client) =>
-        client.client_name.toLowerCase().includes(filterName.toLowerCase())
-    );
+    }, [page, rowsPerPage, searchText]);
 
     const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
-            const newSelected = filteredData.map((n) => n.client_id);
+            const newSelected = clients.map((n) => n.client_id);
             setSelected(newSelected);
         } else {
             setSelected([]);
@@ -46,47 +66,34 @@ export default function ClientView() {
 
     const handleClick = (id: number) => {
         const selectedIndex = selected.indexOf(id);
-        let newSelected: number[] = [];
-
-        if (selectedIndex === -1) {
-            newSelected = [...selected, id];
-        } else {
-            newSelected = selected.filter((item) => item !== id);
-        }
-
+        const newSelected =
+            selectedIndex === -1
+                ? [...selected, id]
+                : selected.filter((item) => item !== id);
         setSelected(newSelected);
     };
 
-    const handleChangePage = (event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    const handleFilter = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setFilterName(event.target.value);
-        setPage(0);
-    };
-
     const isSelected = (id: number) => selected.indexOf(id) !== -1;
-    const emptyRows = Math.max(0, (1 + page) * rowsPerPage - filteredData.length);
+    const emptyRows = Math.max(0, rowsPerPage - clients.length);
 
     return (
         <Box p={3}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h4">Clients</Typography>
             </Box>
+
             <TextField
-                label="Search by Client Name"
+                label="Search anything (Name, City, Phone...)"
                 variant="outlined"
-                value={filterName}
-                onChange={handleFilter}
+                value={searchText}
+                onChange={(e) => {
+                    setSearchText(e.target.value);
+                    setPage(0);
+                }}
                 fullWidth
                 margin="normal"
             />
+
             <Card>
                 <TableContainer>
                     <Table>
@@ -94,55 +101,53 @@ export default function ClientView() {
                             <TableRow>
                                 <TableCell padding="checkbox">
                                     <Checkbox
-                                        checked={selected.length === filteredData.length && filteredData.length > 0}
-                                        indeterminate={selected.length > 0 && selected.length < filteredData.length}
+                                        checked={selected.length === clients.length && clients.length > 0}
+                                        indeterminate={selected.length > 0 && selected.length < clients.length}
                                         onChange={handleSelectAllClick}
                                     />
                                 </TableCell>
                                 <TableCell>Client ID</TableCell>
                                 <TableCell>Client Name</TableCell>
-                                <TableCell>Address</TableCell>
                                 <TableCell>City</TableCell>
                                 <TableCell>Phone</TableCell>
                                 <TableCell>Currency</TableCell>
                                 <TableCell>Country</TableCell>
+                                <TableCell>Outstanding</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredData
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((row) => {
-                                    const isItemSelected = isSelected(row.client_id);
-                                    return (
-                                        <TableRow
-                                            key={row.client_id}
-                                            hover
-                                            selected={isItemSelected}
-                                            onClick={() => handleClick(row.client_id)}
-                                        >
-                                            <TableCell padding="checkbox">
-                                                <Checkbox checked={isItemSelected} />
-                                            </TableCell>
-                                            <TableCell>{row.client_id}</TableCell>
-                                            <TableCell>{row.client_name}</TableCell>
-                                            <TableCell>{row.address}</TableCell>
-                                            <TableCell>{row.city}</TableCell>
-                                            <TableCell>{row.phone}</TableCell>
-                                            <TableCell>{row.currency}</TableCell>
-                                            <TableCell>{row.country}</TableCell>
-                                        </TableRow>
-                                    );
-                                })}
+                            {clients.map((row) => {
+                                const isItemSelected = isSelected(row.client_id);
+                                return (
+                                    <TableRow
+                                        key={row.client_id}
+                                        hover
+                                        selected={isItemSelected}
+                                        onClick={() => handleClick(row.client_id)}
+                                    >
+                                        <TableCell padding="checkbox">
+                                            <Checkbox checked={isItemSelected} />
+                                        </TableCell>
+                                        <TableCell>{row.client_id}</TableCell>
+                                        <TableCell>{row.client_name}</TableCell>
+                                        <TableCell>{row.city}</TableCell>
+                                        <TableCell>{row.phone}</TableCell>
+                                        <TableCell>{row.currency}</TableCell>
+                                        <TableCell>{row.country}</TableCell>
+                                        <TableCell>{`${row.outstanding ?? 0} ${row.creditOrDebit || ''}`}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
 
                             {emptyRows > 0 && (
                                 <TableRow style={{ height: 53 * emptyRows }}>
-                                    <TableCell colSpan={8} />
+                                    <TableCell colSpan={9} />
                                 </TableRow>
                             )}
 
-                            {filteredData.length === 0 && (
+                            {clients.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center">
+                                    <TableCell colSpan={9} align="center">
                                         No clients found
                                     </TableCell>
                                 </TableRow>
@@ -151,15 +156,31 @@ export default function ClientView() {
                     </Table>
                 </TableContainer>
 
-                <TablePagination
-                    page={page}
-                    component="div"
-                    count={filteredData.length}
-                    rowsPerPage={rowsPerPage}
-                    onPageChange={handleChangePage}
-                    rowsPerPageOptions={[5, 10, 25]}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                />
+                <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
+                    <TextField
+                        select
+                        label="Rows per page"
+                        value={rowsPerPage}
+                        onChange={(e) => {
+                            setRowsPerPage(parseInt(e.target.value, 10));
+                            setPage(0);
+                        }}
+                        size="small"
+                        sx={{ width: 150 }}
+                    >
+                        <MenuItem value={5}>5</MenuItem>
+                        <MenuItem value={10}>10</MenuItem>
+                        <MenuItem value={25}>25</MenuItem>
+                    </TextField>
+
+                    <Pagination
+                        count={Math.ceil(totalCount / rowsPerPage)}
+                        page={page + 1}
+                        onChange={(_e, value) => setPage(value - 1)}
+                        color="primary"
+                        shape="rounded"
+                    />
+                </Box>
             </Card>
         </Box>
     );

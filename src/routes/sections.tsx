@@ -71,6 +71,7 @@ export const routesSection: RouteObject[] = [
       { path: 'client', element: <ClientPage /> },
       { path: 'payment', element: <PaymentPage /> },
       { path: 'payment-Details', element: <PaymentDetailsPage /> },
+      // { path: 'payment-Details/:id', element: <PaymentDetailsPage /> }
     ],
   },
   // {
