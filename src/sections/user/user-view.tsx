@@ -136,9 +136,9 @@ export default function PaymnetView() {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: '80vw',
-            maxWidth: '1000px',
-            height: '80vh',
+            width: '100vw',
+            maxWidth: '1200px',
+            height: '100vh',
             bgcolor: 'background.paper',
             boxShadow: 24,
             p: 4,
@@ -164,7 +164,7 @@ export default function PaymnetView() {
           </Box>
           <Payment onSuccess={() => {
             handleClose();
-          }}  />
+          }} />
         </Box>
       </Modal>
 

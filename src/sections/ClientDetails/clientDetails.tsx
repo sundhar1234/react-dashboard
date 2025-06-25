@@ -13,7 +13,9 @@ import {
     Checkbox,
     TextField,
     Pagination,
-    MenuItem
+    MenuItem,
+    Button,
+    Modal
 } from '@mui/material';
 
 import axiosInstance from '../../apiCall';
@@ -37,6 +39,11 @@ export default function ClientView() {
     const [selected, setSelected] = useState<number[]>([]);
     const [searchText, setSearchText] = useState('');
     const [totalCount, setTotalCount] = useState(50);
+
+
+    const [openModal, setOpenModal] = useState(false);
+    const [selectedClient, setSelectedClient] = useState<ClientType | null>(null);
+    const [outstandingValue, setOutstandingValue] = useState('');
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -78,6 +85,38 @@ export default function ClientView() {
     const isSelected = (id: number) => selected.indexOf(id) !== -1;
     const emptyRows = Math.max(0, rowsPerPage - clients.length);
 
+    const handleViewClick = async (client: ClientType) => {
+        try {
+            const response = await axiosInstance.get(`/client/${client.client_id}`);
+            const updatedClient = response.data;
+            setSelectedClient(updatedClient);
+            setOutstandingValue(updatedClient.outstanding?.toString() || '');
+            setOpenModal(true);
+        } catch (error) {
+            console.error('Failed to fetch client by ID:', error);
+        }
+    };
+    const handleUpdateOutstanding = async () => {
+        try {
+            if (selectedClient) {
+                await axiosInstance.put('/client/update', {
+                    client_id: selectedClient.client_id,
+                    outstanding: Number(outstandingValue),
+                    creditOrDebit: selectedClient.creditOrDebit
+                });
+
+                const updatedClients = clients.map((client) =>
+                    client.client_id === selectedClient.client_id
+                        ? { ...client, outstanding: Number(outstandingValue) }
+                        : client
+                );
+                setClients(updatedClients);
+                setOpenModal(false);
+            }
+        } catch (error) {
+            console.error('Error updating outstanding value:', error);
+        }
+    };
     return (
         <Box p={3}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -115,6 +154,7 @@ export default function ClientView() {
                                 <TableCell>Currency</TableCell>
                                 <TableCell>Country</TableCell>
                                 <TableCell>Outstanding</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -137,6 +177,11 @@ export default function ClientView() {
                                         <TableCell>{row.currency}</TableCell>
                                         <TableCell>{row.country}</TableCell>
                                         <TableCell>{`${row.outstanding ?? 0} ${row.creditOrDebit || ''}`}</TableCell>
+                                        <TableCell>
+                                            <Button variant="outlined" size="small" onClick={() => handleViewClick(row)}>
+                                                View
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 );
                             })}
@@ -182,6 +227,44 @@ export default function ClientView() {
                         color="primary"
                         shape="rounded"
                     />
+
+
+                    <Modal open={openModal} onClose={() => setOpenModal(false)}>
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                bgcolor: 'background.paper',
+                                boxShadow: 24,
+                                p: 4,
+                                minWidth: 800
+                            }}
+                        >
+                            <Typography variant="h6" mb={2}>
+                                Before Outstanding for <strong>{selectedClient?.outstanding ?? 0} {selectedClient?.creditOrDebit || ''}</strong>
+                            </Typography>
+
+                            <TextField
+                                label="Outstanding"
+                                type="number"
+                                fullWidth
+                                value={outstandingValue}
+                                onChange={(e) => setOutstandingValue(e.target.value)}
+                                margin="normal"
+                            />
+
+                            <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                                <Button variant="outlined" onClick={() => setOpenModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button variant="contained" color="primary" onClick={handleUpdateOutstanding}>
+                                    Update
+                                </Button>
+                            </Box>
+                        </Box>
+                    </Modal>
                 </Box>
             </Card>
         </Box>
